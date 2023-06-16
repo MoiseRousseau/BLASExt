@@ -21,18 +21,17 @@ make install
 
 List of the new BLAS function implemented in this library:
 
-| Function     | ``type(A)`` | ``type(B)`` | ``type(D)`` | Status |
-|--------------|-------------|-------------|-------------|--------|
-| ``C = A * D * A^T`` | D |  | Z | OK |
-| ``C = A * D * A^H`` | Z |  | Z | TODO |
-| ``C = A * B * A^T`` | D | D |  | TODO |
-| ``C = A * B * A^H`` | Z | Z |  | TODO |
+| Function     | Operation | Status |
+|--------------|-----------|--------|
+| `dvdvt(double complex* C, double* A, double complex*D, int l, int m)` |``C = A*D*A^T`` | OK |
+| `zvdvh(double complex* C, double complex* C A, double complex*D, int l, int m)` |``C = A*D*A^H`` | TODO |
 
 Note `A`, `B` and `C` are general matrices and `D` is a diagonal matrix.
-`D` and `Z` represent double and complex double type.
+`l` represent the size of the square `C` matrix and `m` the size inner matrix product.
 
 
 ## TODO
 
 * Correct warning during compilation
 * Autodetection of AVX2 capability
+* Add install target in CMake
