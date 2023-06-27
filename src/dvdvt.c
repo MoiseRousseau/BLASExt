@@ -21,22 +21,12 @@ https://people.freebsd.org/~lstewart/articles/cpumemory.pdf
 
 //Double version
 void dvdvt_naive(double complex* G, const double* V, const complex* D, const int L, const int M) {
+  for(int i=0; i<L*L; ++i) G[i] = 0;
   for(int i=0; i<M; ++i){
     for(int a=0; a<L; ++a){
       double complex vai = V[a+i*L]*D[i];
       for(int b=0; b<L; ++b){
         G[b + a*L] += vai*V[b+i*L]; // original was G(a,b) but was wrong with complex operators
-      }
-    }
-  }
-}
-//Complex version
-void zvdvh_naive(double complex* G, const complex* V, const complex* D, const int L, const int M) {
-  for(int i=0; i<M; ++i){
-    for(int a=0; a<L; ++a){
-      double complex vai = V[a+i*L]*D[i];
-      for(int b=0; b<L; ++b){
-        G[b + a*L] += vai*conj(V[b+i*L]); // original was G(a,b) but was wrong with complex operators
       }
     }
   }
@@ -55,8 +45,8 @@ void zvdvh_naive(double complex* G, const complex* V, const complex* D, const in
 #define KERNEL_WIDTH_D 2
 void kernel_dvdvt(double complex* G, const double* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L)
 {
-  __m256d res[KERNEL_HEIGH_D][KERNEL_WIDTH_D]; //hold two complex type
-  __m256d reg_temp, reg_temp2;
+  __m256d res[KERNEL_HEIGH_D][KERNEL_WIDTH_D] = {0.}; //hold two complex type
+  __m256d reg_temp = {0.}, reg_temp2 = {0.};
   double complex temp;
   
   for(int k=l; k<r; k++) { //k inner dim to reduce (V column, square size of D)
@@ -109,8 +99,8 @@ void kernel_dvdvt(double complex* G, const double* V, const double complex* D, c
 
 void kernel_dvdvt_hor(double complex* G, const double* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L)
 {
-  __m256d res[KERNEL_WIDTH_D]; //hold two complex type
-  __m256d reg_temp, reg_temp2;
+  __m256d res[KERNEL_WIDTH_D] = {0.}; //hold two complex type
+  __m256d reg_temp = {0.}, reg_temp2 = {0.};
   double complex temp;
   
   for(int k=l; k<r; k++) {
@@ -153,12 +143,12 @@ void kernel_dvdvt_hor(double complex* G, const double* V, const double complex* 
 
 
 
-void dvdvt(double complex* G, const double* V, const complex* D, const int L, const int M) {
+void dvdvt(double complex* G, const double* V, const double complex* D, const int L, const int M) {
   //G is LpadH * L
   const int LpadH = (L + 2*KERNEL_WIDTH_D-1) / (2*KERNEL_WIDTH_D) * (2*KERNEL_WIDTH_D);
   
   //padding the output matrix to fit the kernel (to remove later)
-  double complex* _G = (double complex*) malloc(L * LpadH * sizeof(double complex));
+  double complex* _G = calloc(L * LpadH, sizeof(double complex));
   
   //using the main kernel
   for (int x = 0; x <= L-KERNEL_HEIGH_D; x += KERNEL_HEIGH_D)
@@ -170,7 +160,7 @@ void dvdvt(double complex* G, const double* V, const complex* D, const int L, co
     for (int y = 0; y <= x; y += 2*KERNEL_WIDTH_D)
       kernel_dvdvt_hor(_G, V, D, x, y, 0, M, M, L);
   
-  for (int i = 0; i < L; i++) memcpy(&_G[i*L], &G[i*L], L*sizeof(double complex));
+  for (int i = 0; i < L; i++) memcpy(&G[i*L], &_G[i*L], L*sizeof(double complex));
   
   free(_G); // every allocated pointer must be freed
 }
@@ -295,14 +285,6 @@ void VDVH_kernel_avx512(std::vector<Complex> &G, const std::vector<double> &V, c
   
   _G.resize(0);
 }
-
-// Complex version
-#define KERNEL_HEIGH_C_AVX512 0
-#define KERNEL_WIDTH_C_AVX512 0
-void VDVH_kernel_avx512(std::vector<Complex> &G, const std::vector<Complex> &V, const std::vector<Complex> &D, const int L, const int M) {
-  VDVH_naive(G,V,D,L,M);
-}
-void kernel_avx512(void* G, Complex* V, Complex* D, int x, int y, int l, int r, int M, int L) {};
 
 #endif
 

@@ -19,20 +19,10 @@ set(CMAKE_C_FLAGS_RELEASE "-O2 -march=native -ftree-vectorize -funroll-loops")
 # Define target 
 #------------------
 add_library(BLASExt SHARED
-    src/xvdvx.c
+    src/dvdvt.c
+    src/zvdvh.c
 )
-
 set_target_properties(BLASExt PROPERTIES VERSION ${PROJECT_VERSION} PREFIX "" SUFFIX ".so")
-
-#----------------------------------------
-# Include BLAS - LAPACK for benchmarking
-#----------------------------------------
-
-include(FindLAPACK)
-message(STATUS "LAPACK lib: ${LAPACK_LIBRARIES}")
-
-add_subdirectory(bench)
-
 
 #-----------------------------------------------
 # Find supported instruction set
@@ -44,3 +34,16 @@ if (AVX2_FOUND)
     add_compile_definitions(HAVE_AVX2)
     message(STATUS "Processor instructions set: AVX2")
 endif()
+
+
+#----------------------------------------
+# Add benchmark
+#----------------------------------------
+
+if (BUILD_BENCHMARKS)
+  include(FindLAPACK)
+  message(STATUS "LAPACK lib: ${LAPACK_LIBRARIES}")
+
+  add_subdirectory(bench)
+endif()
+
