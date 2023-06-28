@@ -13,7 +13,7 @@ message(STATUS "Architecture: ${ARCHITECTURE}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_C_FLAGS_DEBUG "-g -march=native")
-set(CMAKE_C_FLAGS_RELEASE "-O2 -march=native -ftree-vectorize -funroll-loops")
+set(CMAKE_C_FLAGS_RELEASE "-O2 -march=native -ffast-math -ftree-vectorize -funroll-loops")
 
 #------------------
 # Define target 
