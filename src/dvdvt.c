@@ -16,11 +16,20 @@ https://people.freebsd.org/~lstewart/articles/cpumemory.pdf
 
 
 // 
-// NAIVE, ORIGINAL VERSION
+// NAIVE
 //
-
-//Double version
 void dvdvt_naive(double complex* G, const double* V, const complex* D, const int L, const int M) {
+  for (int i=0; i<L*L; ++i) G[i] = 0;
+  for (int a=0; a<L; ++a) //rows
+    for (int b=0; b<L; ++b) //column
+      for (int k=0; k<M; ++k)
+        G[a+b*L] += V[a+k*L] * D[k] * V[b+k*L]; 
+}
+
+//
+// MEMORY ALIGNED VERSION
+//
+void dvdvt_mem_align(double complex* G, const double* V, const complex* D, const int L, const int M) {
   for(int i=0; i<L*L; ++i) G[i] = 0;
   for(int i=0; i<M; ++i){
     for(int a=0; a<L; ++a){
@@ -39,8 +48,6 @@ void dvdvt_naive(double complex* G, const double* V, const complex* D, const int
 //
 // KERNEL AVX2 version
 //
-
-// Double
 #define KERNEL_HEIGH_D 4
 #define KERNEL_WIDTH_D 2
 void kernel_dvdvt(double complex* G, const double* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L)

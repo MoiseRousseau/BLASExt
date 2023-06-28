@@ -16,15 +16,27 @@ https://people.freebsd.org/~lstewart/articles/cpumemory.pdf
 
 
 // 
-// NAIVE, ORIGINAL VERSION
+// NAIVE
 //
 void zvdvh_naive(double complex* G, const complex* V, const complex* D, const int L, const int M) {
   for(int i=0; i<L*L; ++i) G[i] = 0;
+  for (int a=0; a<L; ++a) //rows
+    for (int b=0; b<L; ++b) //column
+      for (int k=0; k<M; ++k)
+        G[a+b*L] += V[a+k*L] * D[k] * conj(V[b+k*L]);
+}
+
+
+//
+// MEMORY ALIGNED VERSION
+//
+void zvdvh_mem_align(double complex* G, const complex* V, const complex* D, const int L, const int M) {
+  for(int i=0; i<L*L; ++i) G[i] = 0;
   for(int i=0; i<M; ++i){
     for(int a=0; a<L; ++a){
-      double complex vai = V[a+i*L]*D[i];
+      double complex vai = conj(V[a+i*L])*D[i];
       for(int b=0; b<L; ++b){
-        G[b + a*L] += vai*conj(V[b+i*L]); // original was G(a,b) but was wrong with complex operators
+        G[b + a*L] += vai*V[b+i*L];
       }
     }
   }
@@ -70,8 +82,8 @@ void kernel_zvdvh(double complex* G, const double complex* V, const double compl
   // write the results back to G
   for (int j = 0; j < KERNEL_WIDTH_C; j++) {
     for (int i = 0; i < KERNEL_HEIGH_C; i++) {
-      G[(x+i)*L + (y+2*j)] = res[i][j][0] + res[i][j][1]*1.I;
-      G[(x+i)*L + (y+2*j+1)] += res[i][j][2] + res[i][j][3]*1.I;
+      G[(x+i) + (y+2*j)*L] = res[i][j][0] + res[i][j][1]*1.I;
+      G[(x+i) + (y+2*j+1)*L] += res[i][j][2] + res[i][j][3]*1.I;
     }
   }
 }
@@ -81,24 +93,30 @@ void kernel_zvdvh_hor(double complex* G, const double complex* V, const double c
   __m256d res[KERNEL_WIDTH_C] = {0.}; //hold two complex type
   __m256d reg_temp = {0.}, reg_temp2 = {0.};
   double complex temp;
+  double* _V = (double*) V;
   
-  for(int k=l; k<r; k++) {
+  for(int k=l; k<r; k++) { //k inner dim to reduce (V column, square size of D)
+    //broadcast lines of V(x+i,k) * D(k) into a register
     temp = V[x + k*L] * D[k];
-    reg_temp = reg_temp = _mm256_set_pd(cimag(temp),creal(temp),cimag(temp),creal(temp));
+    reg_temp = _mm256_set_pd(cimag(temp),creal(temp),cimag(temp),creal(temp));
+    //now multiply the temp register by column of B
     for (int j = 0; j < KERNEL_WIDTH_C; j++) {
-      int index = y+2*j + k*L;
-      reg_temp2 = _mm256_set_pd(V[index+1],V[index+1],V[index],V[index]);
+      //we should take indice V^T(k,y+j) and V^T(k,y+j+1)
+      //so for V:             V(y+j,k)   and V(y+j+1,k)
+      int index = 2*(y+2*j + k*L);
+      reg_temp2 = _mm256_set_pd(_V[index+2],_V[index+2],_V[index],_V[index]); //real part
       res[j] = _mm256_fmadd_pd(reg_temp2, reg_temp, res[j]);
-      reg_temp2 = _mm256_set_pd(-V[index+3],V[index+3],-V[index+1],V[index+1]); //imag part
+      reg_temp2 = _mm256_set_pd(_V[index+3],-_V[index+3],_V[index+1],-_V[index+1]); //imag part (conjugate)
+      reg_temp2 = _mm256_mul_pd(reg_temp2, reg_temp);
       reg_temp2 = _mm256_permute_pd(reg_temp2, 0b0101);
-      res[j] = _mm256_fmadd_pd(reg_temp2, reg_temp, res[j]);
+      res[j] = _mm256_add_pd(reg_temp2, res[j]);
     }
   }
   
   // write the results back to G
   for (int j = 0; j < KERNEL_WIDTH_C; j++) {
-    G[x*L + y+2*j] += res[j][0] + res[j][1]*1.I;
-    G[x*L + y+2*j+1] += res[j][2] + res[j][3]*1.I;
+    G[x + (y+2*j)*L] = res[j][0] + res[j][1]*1.I;
+    G[x + (y+2*j+1)*L] += res[j][2] + res[j][3]*1.I;
   }
 }
 

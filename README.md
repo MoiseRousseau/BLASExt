@@ -19,19 +19,20 @@ make install
 
 ## New BLAS function
 
-List of the new BLAS function implemented in this library:
+List of the new pseudo-BLAS function implemented in this library:
 
-| Function     | Operation | Status |
-|--------------|-----------|--------|
-| `dvdvt(double complex* C, double* A, double complex* D, int l, int m)` |``C = A*D*A^T`` | OK |
-| `zvdvh(double complex* C, double complex* A, double complex* D, int l, int m)` |``C = A*D*A^H`` | PROBLEM |
+| Function     | Operation | Speedup |
+|--------------|-----------|---------|
+| `dvdvt(double complex* C, double* A, double complex* D, int L, int M)` |``C = A*D*A^T`` | 10x |
+| `zvdvh(double complex* C, double complex* A, double complex* D, int L, int M)` |``C = A*D*A^H`` | 5x |
 
 Note `A`, `B` and `C` are general matrices and `D` is a diagonal matrix.
-`l` represent the size of the square `C` matrix and `m` is the size of inner matrix product.
+`L` represents the size of the square `C` matrix and `M` is the size of inner matrix product.
+Speedup was determined for a random matrix of size `L=67`, `M=500` and compared to a naive implementation.
+See the `bench` folder which contains the source file used to compute the speedup).
 
 
 ## TODO
 
 * Autodetection of AVX2 capability
 * Add install target in CMake
-* zvdvh wrong result: I had to transpose in the kernel and horizontal kernel does not work

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex.h>
+#include <math.h>
 #include <sys/time.h>
 
 /* 
@@ -57,6 +58,15 @@ const void print_matrix(const double complex* A, const int L, const int M) {
   for (long int j=0; j<M; j++)
     for (long int i=0; i<L; i++)
       printf("(%li,%li) %.3f + %.3fi\n", i, j, creal(A[i+j*L]), cimag(A[i+j*L]));
+}
+
+/*
+Compute a matrix norm defined as the root of the squared sum of matrix element modulus
+*/
+double matrix_norm(const double complex* A, const int L, const int M) {
+  double norm = 0;
+  for (long int i=0; i<L*M; i++) norm += conj(A[i])*A[i];
+  return sqrt(norm);
 }
 
 /*

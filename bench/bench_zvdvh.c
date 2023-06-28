@@ -28,10 +28,21 @@ int main(int argc, char **argv) {
     }
     end = micro_time();
     printf("zvdvh %.3f s\n", (end - start) / 1e6);
-    printf("G[0,0] = %.3f + %.3fi\n", creal(G[0]), cimag(G[0]));
     printf("G[1,0] = %.3f + %.3fi\n", creal(G[1]), cimag(G[1]));
+    printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
     //print_matrix(G, L, L);
+    
+    //compare to memory aligned version
+    start = micro_time();
+    for (int i=0; i<repeat; i++) {
+        zvdvh_mem_align(G, A, D, L, M);
+    }
+    end = micro_time();
     printf("---------------------\n");
+    printf("zvdvh_mem_align = %.3f s\n", (end - start) / 1e6);
+    printf("G[1,0] = %.3f + %.3fi\n", creal(G[1]), cimag(G[1]));
+    printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
+    //print_matrix(G, L, L);
     
     //compare to naive version
     start = micro_time();
@@ -39,8 +50,9 @@ int main(int argc, char **argv) {
         zvdvh_naive(G, A, D, L, M);
     }
     end = micro_time();
+    printf("---------------------\n");
     printf("zvdvh_naive %.3f s\n", (end - start) / 1e6);
-    printf("G[0,0] = %.3f + %.3fi\n", creal(G[0]), cimag(G[0]));
     printf("G[1,0] = %.3f + %.3fi\n", creal(G[1]), cimag(G[1]));
+    printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
     //print_matrix(G, L, L);
 }
