@@ -24,7 +24,7 @@ List of the new pseudo-BLAS function implemented in this library:
 | Function     | Operation | Speedup |
 |--------------|-----------|---------|
 | `dvdvt(double complex* C, double* A, double complex* D, int L, int M)` |``C = A*D*A^T`` | 13x |
-| `zvdvh(double complex* C, double complex* A, double complex* D, int L, int M)` |``C = A*D*A^H`` | 4x |
+| `zvdvh(double complex* C, double complex* A, double complex* D, int L, int M)` |``C = A*D*A^H`` | 6x |
 
 Note `A`, `B` and `C` are general matrices and `D` is a diagonal matrix.
 `L` represents the size of the square `C` matrix and `M` is the size of inner matrix product.
@@ -36,4 +36,3 @@ See the `bench` folder which contains the source file used to compute the speedu
 
 * Autodetection of AVX2 capability
 * Add install target in CMake
-* zvdvh not as fast as the memory aligned version

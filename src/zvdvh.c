@@ -49,7 +49,7 @@ void zvdvh_mem_align(double complex* G, const complex* V, const complex* D, cons
 //
 // KERNEL AVX2 version
 //
-#define KERNEL_HEIGH_C 4
+#define KERNEL_HEIGH_C 3
 #define KERNEL_WIDTH_C 2
 void kernel_zvdvh(double complex* G, const double complex* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L)
 {
@@ -61,20 +61,18 @@ void kernel_zvdvh(double complex* G, const double complex* V, const double compl
   for(int k=l; k<r; k++) { //k inner dim to reduce (V column, square size of D)
     //loops must be unrooled
     for (int i = 0; i<KERNEL_HEIGH_C; i++) {
-      //broadcast lines of V(x+i,k) * D(k) into a register
       temp = V[x+i + k*L] * D[k];
       reg_temp = _mm256_set_pd(cimag(temp),creal(temp),cimag(temp),creal(temp));
-      //now multiply the temp register by column of B
       for (int j = 0; j < KERNEL_WIDTH_C; j++) {
-        //we should take indice V^T(k,y+j) and V^T(k,y+j+1)
-        //so for V:             V(y+j,k)   and V(y+j+1,k)
         int index = 2*(y+2*j + k*L);
         reg_temp2 = _mm256_set_pd(_V[index+2],_V[index+2],_V[index],_V[index]); //real part
         res[i][j] = _mm256_fmadd_pd(reg_temp2, reg_temp, res[i][j]);
-        reg_temp2 = _mm256_set_pd(_V[index+3],-_V[index+3],_V[index+1],-_V[index+1]); //imag part (conjugate)
-        reg_temp2 = _mm256_mul_pd(reg_temp2, reg_temp);
-        reg_temp2 = _mm256_permute_pd(reg_temp2, 0b0101);
-        res[i][j] = _mm256_add_pd(reg_temp2, res[i][j]);
+      }
+      reg_temp = _mm256_set_pd(-creal(temp),cimag(temp),-creal(temp),cimag(temp));
+      for (int j = 0; j < KERNEL_WIDTH_C; j++) {
+        int index = 2*(y+2*j + k*L);
+        reg_temp2 = _mm256_set_pd(_V[index+3],_V[index+3],_V[index+1],_V[index+1]); //imag part
+        res[i][j] = _mm256_fmadd_pd(reg_temp2, reg_temp, res[i][j]);
       }
     }
   }
@@ -106,10 +104,15 @@ void kernel_zvdvh_hor(double complex* G, const double complex* V, const double c
       int index = 2*(y+2*j + k*L);
       reg_temp2 = _mm256_set_pd(_V[index+2],_V[index+2],_V[index],_V[index]); //real part
       res[j] = _mm256_fmadd_pd(reg_temp2, reg_temp, res[j]);
-      reg_temp2 = _mm256_set_pd(_V[index+3],-_V[index+3],_V[index+1],-_V[index+1]); //imag part (conjugate)
-      reg_temp2 = _mm256_mul_pd(reg_temp2, reg_temp);
-      reg_temp2 = _mm256_permute_pd(reg_temp2, 0b0101);
-      res[j] = _mm256_add_pd(reg_temp2, res[j]);
+    }
+    reg_temp = _mm256_set_pd(-creal(temp),cimag(temp),-creal(temp),cimag(temp));
+    //now multiply the temp register by column of B
+    for (int j = 0; j < KERNEL_WIDTH_C; j++) {
+      //we should take indice V^T(k,y+j) and V^T(k,y+j+1)
+      //so for V:             V(y+j,k)   and V(y+j+1,k)
+      int index = 2*(y+2*j + k*L);
+      reg_temp2 = _mm256_set_pd(_V[index+3],_V[index+3],_V[index+1],_V[index+1]); //imag part (conjugate)
+      res[j] = _mm256_fmadd_pd(reg_temp2, reg_temp, res[j]);
     }
   }
   
