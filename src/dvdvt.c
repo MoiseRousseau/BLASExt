@@ -1,6 +1,7 @@
 #include "BLASExt.h"
 #include <complex.h>
 #include <string.h>
+#include <cblas.h>
 
 #ifdef HAVE_AVX2
 #include <immintrin.h>
@@ -18,7 +19,7 @@ https://people.freebsd.org/~lstewart/articles/cpumemory.pdf
 // 
 // NAIVE
 //
-void dvdvt_naive(double complex* G, const double* V, const complex* D, const int L, const int M) {
+void dvdvt_naive(double complex* G, const double* V, const double complex* D, const int L, const int M) {
   for (int i=0; i<L*L; ++i) G[i] = 0;
   for (int a=0; a<L; ++a) //rows
     for (int b=0; b<L; ++b) //column
@@ -29,7 +30,7 @@ void dvdvt_naive(double complex* G, const double* V, const complex* D, const int
 //
 // MEMORY ALIGNED VERSION
 //
-void dvdvt_mem_align(double complex* G, const double* V, const complex* D, const int L, const int M) {
+void dvdvt_mem_align(double complex* G, const double* V, const double complex* D, const int L, const int M) {
   for(int i=0; i<L*L; ++i) G[i] = 0;
   for(int i=0; i<M; ++i){
     for(int a=0; a<L; ++a){
@@ -41,9 +42,52 @@ void dvdvt_mem_align(double complex* G, const double* V, const complex* D, const
   }
 }
 
+//
+// BLAS VERSION
+//
+void dvdvt_blas_gemm(double complex* G, const double* V, const double complex* D, const int L, const int M) {
+  double* VD = malloc(L*M*sizeof(double));
+  double* G_ = malloc(L*L*sizeof(double));
+  //REAL PART
+  //Create VD matrix
+  cblas_dcopy(L*M, V, 1, VD, 1);
+  //Perform VD = V*D
+  for (int i=0; i<M; ++i) {
+    cblas_dscal(L, creal(D[i]), &VD[i*L], 1);
+  }
+  //Perform G_ = VD*V^T
+  cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, L, L, M, 1., VD, L, V, L, 0., G_, L);
+  //Copy back to G
+  cblas_dcopy(L*L, G_, 1, (double*) G, 2);
+  
+  //IMAG PART
+  cblas_dcopy(L*M, V, 1, VD, 1);
+  for (int i=0; i<M; ++i) {
+    cblas_dscal(L, cimag(D[i]), &VD[i*L], 1);
+  }
+  cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, L, L, M, 1., VD, L, V, L, 0., G_, L);
+  cblas_dcopy(L*L, G_, 1, &((double*) G)[1], 2);
+}
+
+void dvdvt_blas_syrk(double complex* G, const double* V, const double complex* D, const int L, const int M) {
+  //Convert V to complex
+  double complex* VD = malloc(L*M * sizeof(double complex));
+  cblas_dcopy(L*M, V, 1, (double*)VD, 2);
+  //Compute V D^1/2
+  for (int i=0; i<M; ++i) {
+    const double complex temp = csqrt(D[i]);
+    cblas_zscal(L, &temp, &VD[i*L], 1);
+  }
+  const double complex one = 1.+0.I, zero = 0.+0.I;
+  cblas_zsyrk(CblasColMajor, CblasLower, CblasNoTrans, L, M, &one, VD, L, &zero, G, L);
+}
+
 
 
 #ifdef HAVE_AVX2
+
+void kernel_dvdvt(double complex* G, const double* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L);
+void kernel_dvdvt_hor(double complex* G, const double* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L);
 
 //
 // KERNEL AVX2 version

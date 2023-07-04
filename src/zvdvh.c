@@ -46,6 +46,9 @@ void zvdvh_mem_align(double complex* G, const complex* V, const complex* D, cons
 
 #ifdef HAVE_AVX2
 
+void kernel_zvdvh(double complex* G, const double complex* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L);
+void kernel_zvdvh_hor(double complex* G, const double complex* V, const double complex* D, const int x, const int y, const int l, const int r, const int M, const int L);
+
 //
 // KERNEL AVX2 version
 //

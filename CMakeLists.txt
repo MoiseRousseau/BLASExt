@@ -24,6 +24,14 @@ add_library(BLASExt SHARED
 )
 set_target_properties(BLASExt PROPERTIES VERSION ${PROJECT_VERSION} PREFIX "" SUFFIX ".so")
 
+#----------------------------------------
+# Find BLAS for base performance implementation to beat 
+#----------------------------------------
+#For better performance with static linking for BLAS, set BLA_STATIC to ON
+#set(BLA_STATIC ON)
+include(FindBLAS)
+target_link_libraries(BLASExt ${BLAS_LIBRARIES})
+
 #-----------------------------------------------
 # Find supported instruction set
 #-----------------------------------------------
@@ -41,9 +49,6 @@ endif()
 #----------------------------------------
 
 if (BUILD_BENCHMARKS)
-  include(FindLAPACK)
-  message(STATUS "LAPACK lib: ${LAPACK_LIBRARIES}")
-
   add_subdirectory(bench)
 endif()
 

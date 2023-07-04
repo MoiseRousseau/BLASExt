@@ -40,6 +40,27 @@ int main(int argc, char **argv) {
     printf("dvdvt_mem_align %.3f s\n", (end - start) / 1e6);
     printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
     
+    //compare to BLAS_GEMM version
+    start = micro_time();
+    for (int i=0; i<repeat; i++) {
+        dvdvt_blas_gemm(G, A, D, L, M);
+    }
+    end = micro_time();
+    printf("---------------------\n");
+    printf("dvdvt_blas_gemm %.3f s\n", (end - start) / 1e6);
+    printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
+    
+    
+    //compare to BLAS_SYRK version
+    start = micro_time();
+    for (int i=0; i<repeat; i++) {
+        dvdvt_blas_syrk(G, A, D, L, M);
+    }
+    end = micro_time();
+    printf("---------------------\n");
+    printf("dvdvt_blas_syrk %.3f s\n", (end - start) / 1e6);
+    printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
+    
     //compare to naive version
     start = micro_time();
     for (int i=0; i<repeat; i++) {

@@ -12,7 +12,7 @@ git clone https://github.com/MoiseRousseau/BLASExt
 2. Compile and install with
 ```
 mkdir build && cd build
-cmake ..
+cmake .. -DBUILD_BENCHMARKS=1
 make
 make install
 ```
