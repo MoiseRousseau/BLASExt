@@ -1,4 +1,4 @@
-#include "BLASExt.h"
+#include "../include/BLASExt.h"
 #include <complex.h>
 #include <string.h>
 #include <cblas.h>
@@ -214,6 +214,12 @@ void dvdvt(double complex* G, const double* V, const double complex* D, const in
   for (int i = 0; i < L; i++) memcpy(&G[i*L], &_G[i*L], L*sizeof(double complex));
   
   free(_G); // every allocated pointer must be freed
+}
+
+#else
+// If AVX2 is not available, use the mem aligned version at least
+void dvdvt(double complex* G, const double* V, const double complex* D, const int L, const int M) {
+  dvdvt_mem_align(G, V, D, L, M);
 }
 
 #endif

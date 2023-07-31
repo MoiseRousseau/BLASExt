@@ -1,5 +1,5 @@
 #include "helper.h"
-#include "../src/BLASExt.h"
+#include "../include/BLASExt.h"
 #include <time.h>
 
 /* 
@@ -43,6 +43,16 @@ int main(int argc, char **argv) {
     printf("G[1,0] = %.3f + %.3fi\n", creal(G[1]), cimag(G[1]));
     printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
     //print_matrix(G, L, L);
+    
+    //compare to BLAS_GEMM version
+    start = micro_time();
+    for (int i=0; i<repeat; i++) {
+        zvdvh_blas_gemm(G, A, D, L, M);
+    }
+    end = micro_time();
+    printf("---------------------\n");
+    printf("zvdvt_blas_gemm %.3f s\n", (end - start) / 1e6);
+    printf("Matrix norm (for comparison) = %.6e\n", matrix_norm(G,L,L));
     
     //compare to naive version
     start = micro_time();

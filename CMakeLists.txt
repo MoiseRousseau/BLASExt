@@ -18,11 +18,11 @@ set(CMAKE_C_FLAGS_RELEASE "-O2 -march=native -ffast-math -ftree-vectorize -funro
 #------------------
 # Define target 
 #------------------
-add_library(BLASExt SHARED
+add_library(libBLASExt SHARED
     src/dvdvt.c
     src/zvdvh.c
 )
-set_target_properties(BLASExt PROPERTIES VERSION ${PROJECT_VERSION} PREFIX "" SUFFIX ".so")
+set_target_properties(libBLASExt PROPERTIES VERSION ${PROJECT_VERSION} PREFIX "" SUFFIX ".so")
 
 #----------------------------------------
 # Find BLAS for base performance implementation to beat 
@@ -30,7 +30,7 @@ set_target_properties(BLASExt PROPERTIES VERSION ${PROJECT_VERSION} PREFIX "" SU
 #For better performance with static linking for BLAS, set BLA_STATIC to ON
 #set(BLA_STATIC ON)
 include(FindBLAS)
-target_link_libraries(BLASExt ${BLAS_LIBRARIES})
+target_link_libraries(libBLASExt ${BLAS_LIBRARIES})
 
 #-----------------------------------------------
 # Find supported instruction set
@@ -47,8 +47,6 @@ endif()
 #----------------------------------------
 # Add benchmark
 #----------------------------------------
-
 if (BUILD_BENCHMARKS)
   add_subdirectory(bench)
 endif()
-

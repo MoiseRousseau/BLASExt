@@ -1,6 +1,7 @@
-#include "BLASExt.h"
+#include "../include/BLASExt.h"
 #include <complex.h>
 #include <string.h>
+#include <cblas.h>
 
 #ifdef HAVE_AVX2
 #include <immintrin.h>
@@ -42,6 +43,24 @@ void zvdvh_mem_align(double complex* G, const complex* V, const complex* D, cons
   }
 }
 
+
+//
+// BLAS VERSION
+//
+void zvdvh_blas_gemm(double complex* G, const double complex* V, const double complex* D, const int L, const int M) {
+  double* VD = malloc(L*M*sizeof(double complex));
+  double* G_ = malloc(L*L*sizeof(double));
+  //REAL PART
+  //Create VD matrix
+  cblas_zcopy(L*M, V, 1, VD, 1);
+  //Perform VD = V*D
+  for (int i=0; i<M; ++i) {
+    cblas_zscal(L, &D[i], &VD[i*L], 1);
+  }
+  //Perform G = VD*V^H
+  const double complex one = 1.+0.I, zero = 0.+0.I;
+  cblas_zgemm(CblasColMajor, CblasNoTrans, CblasConjTrans, L, L, M, &one, VD, L, V, L, &zero, G, L);
+}
 
 
 #ifdef HAVE_AVX2
@@ -148,6 +167,12 @@ void zvdvh(double complex* G, const double complex* V, const complex* D, const i
   for (int i = 0; i < L; i++) memcpy(&G[i*L], &_G[i*L], L*sizeof(double complex));
   
   free(_G); // every allocated pointer must be freed
+}
+
+#else
+// If AVX2 is not available, use the mem aligned version at least
+void zvdvh(double complex* G, const double complex* V, const complex* D, const int L, const int M) {
+  zvdvh_mem_align(G, V, D, L, M);
 }
 
 #endif

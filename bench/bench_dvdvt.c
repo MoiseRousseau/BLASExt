@@ -1,5 +1,5 @@
 #include "helper.h"
-#include "../src/BLASExt.h"
+#include "../include/BLASExt.h"
 #include <time.h>
 
 /* 
